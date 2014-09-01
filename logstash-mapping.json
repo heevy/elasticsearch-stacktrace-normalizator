@@ -1,0 +1,95 @@
+{
+    "order": 0,
+    "template": "logstash-*",
+    "settings": {
+        "index.refresh_interval": "5s",
+        "analysis": {
+            "char_filter": {
+                "java-stacktrace-normalizer-with-lines": {
+                    "type": "java-stacktrace-normalizer",
+                    "lineNumbers": true,
+                    "digest": true
+                },
+                "java-stacktrace-normalizer-without-lines": {
+                    "type": "java-stacktrace-normalizer",
+                    "lineNumbers": false,
+                    "digest": true
+                }
+            },
+            "analyzer": {
+                "java-stacktrace-analyzer-with-lines": {
+                    "type": "custom",
+                    "char_filter": [ "java-stacktrace-normalizer-with-lines" ],
+                    "tokenizer": "keyword",
+                    "filter": [ ]
+                },
+                "java-stacktrace-analyzer-without-lines": {
+                    "type": "custom",
+                    "char_filter": [ "java-stacktrace-normalizer-without-lines" ],
+                    "tokenizer": "keyword",
+                    "filter": [ ]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "_default_": {
+            "dynamic_templates": [
+                {
+                    "string_fields": {
+                        "mapping": {
+                            "index": "analyzed",
+                            "omit_norms": true,
+                            "type": "string",
+                            "fields": {
+                                "raw": {
+                                    "index": "not_analyzed",
+                                    "ignore_above": 256,
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "match_mapping_type": "string",
+                        "match": "*"
+                    }
+                }
+            ],
+            "properties": {
+                "geoip": {
+                    "dynamic": true,
+                    "path": "full",
+                    "properties": {
+                        "location": {
+                            "type": "geo_point"
+                        }
+                    },
+                    "type": "object"
+                },
+                "stack_trace": {
+                    "type": "string",
+                    "index": "analyzed",
+                    "fields": {
+                        "normalized_with_lines": {
+                            "analyzer": "java-stacktrace-analyzer-with-lines",
+                            "type": "string"
+                        },
+                        "normalized": {
+                            "analyzer": "java-stacktrace-analyzer-without-lines",
+                            "type": "string"
+                        }
+                    }
+                },
+                "@version": {
+                    "index": "not_analyzed",
+                    "type": "string"
+                }
+            },
+
+            "_all": {
+                "enabled": true
+            }
+        }
+    },
+
+    "aliases": { }
+}
